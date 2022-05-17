@@ -1,4 +1,4 @@
-import { GETAPICHAR } from './actions'
+import { GETAPICHAR, GETEPISODE } from './actions'
 
 const initialState = {
     allcharacter: [],
@@ -13,7 +13,8 @@ export default function rootReducer(state = initialState, { type, payload}) {
         case GETAPICHAR:
             return { ...state, allcharacter: payload, characterbkp: payload}
 
-
+        case GETEPISODE:
+            return { ...state, allepisode: payload }
     default:
         return state;
 
