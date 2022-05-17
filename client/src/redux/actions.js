@@ -1,0 +1,3 @@
+// TIPOS DE ACCIONES
+
+export const GETAPICHAR = 'GETAPICHAR';
