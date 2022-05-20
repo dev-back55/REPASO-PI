@@ -24,8 +24,25 @@ router.get('/', async(req, res) => {
             })
             totalData = totalData.concat(allToShow)
         }
+        let dbChar = []
+        dbChar = await Character.findAll({
+            include: {
+                model: Episode,
+                attributes: ['name'],
+                through: {
+                    attributes: [],
+                }
+            }
+        })
         
-        return totalData.length?res.status(200).json(totalData):res.status(404).json({error: 'No se encontraron Datos'})
+        if(dbChar.length){
+            fullData = totalData.concat(dbChar)
+        }else {
+            return totalData.length?res.status(200).json(totalData):res.status(404).json({error: 'No se encontraron Datos'})    
+        }
+        
+        return fullData.length?res.status(200).json(fullData):res.status(404).json({error: 'No se encontraron Datos'})
+    
     } catch (error) {
         console.log(error)
     }
@@ -34,14 +51,16 @@ router.get('/', async(req, res) => {
 router.get('/:id', async(req, res)=>{
     try {
         const {id} = req.params;
-        
-        if(typeof parseInt(id) === 'number'){
+
+        console.log(id, 'id en get x id')
+      
+        if(id.length < 10 && typeof parseInt(id) === 'number'){
             
             const response = await axios.get(`https://rickandmortyapi.com/api/character/${id}`)
             const personaje = await response.data
             
             if(personaje){
-                character = {
+               const character = {
                     id: personaje.id,
                     name: personaje.name,
                     species: personaje.species,
@@ -54,6 +73,15 @@ router.get('/:id', async(req, res)=>{
             } else {
                 return res.status(404).json({error: 'Personaje no Encontrado!!'})
             }
+        }else {
+            const charDb = await Character.findByPk(id,{
+                include: {
+                    model: Episode
+                }
+            });
+            console.log(charDb, 'char de DB')
+            if(charDb) return res.status(200).json(charDb)
+            return res.status(404).json({error: 'Personaje no Encontrado!!'})
         }
     } catch (error) {
         console.log(error)
@@ -64,15 +92,30 @@ router.get('/:id', async(req, res)=>{
 
 router.post('/', async(req,res)=>{
     try {
-        const { name, species, origin, image, created } = req.body
+        const { name, species, origin, image, created, selectedEpisode } = req.body
         const character = await Character.create({
             name, species, origin, image, created
         })
+
+        if(selectedEpisode){
+            const idEpidb = await Episode.findAll({
+                where: {
+                    name: selectedEpisode
+                }
+            })
+            const idEpi = [];
+            idEpidb.forEach(epi => {
+                idEpi.push(epi.dataValues.id)
+            })
+            await character.addEpisodes(idEpi);
+        }
+
         if(!character) return res.status(404).json({error: 'No se pudo crear Personaje!'})
         res.status(201).json(character)
     } catch (error) {
         console.log(error)
     }
 })
+
 
 module.exports = router;
